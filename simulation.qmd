@@ -1,0 +1,13 @@
+function you created
+show the code 
+show the simulation
+
+#set seed, for repeattive
+#repeat simulation
+##sum the strd mean - 
+
+what is the different for the variability 
+
+variability < signal (the winning probality)
+if >, increase the simulation # to reduce the Var.
+
