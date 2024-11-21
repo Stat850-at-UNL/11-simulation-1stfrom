@@ -1,5 +1,6 @@
 ---
 title: "Pseudocode: Craps Simulation"
+author: Nathan Ma
 ---
 
 # Instructor Comments
@@ -210,8 +211,12 @@ run_craps_simulation <- function(N) {
 
 ```{r, run simulation example}
 set.seed(114514)
-simulation_results <- run_craps_simulation(10000)
+simulation_results <- run_craps_simulation(1000)
 head(simulation_results)
+# number of rolls
+# every roll
+# every point
+# outcome
 ```
 ## Planning for implementation
 

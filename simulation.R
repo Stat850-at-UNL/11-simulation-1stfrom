@@ -1,67 +1,125 @@
-# Function to simulate a single roll of two dice
 roll_dice <- function() {
-  return(sum(sample(1:6, 2, replace = TRUE)))
+  # Input: None
+  # Output: an integer from 1 to 12
+  # Description: Generate 2 random integers from 1 to 6 and sum them
+  die1 <- sample(1:6, 1)
+  die2 <- sample(1:6, 1)
+  return(die1 + die2)
 }
 
-# Function to play a game of Craps one step at a time
-play_craps <- function() {
-  cat("Starting a new game of Craps...\n")
-  
-  # Initial roll (come-out roll)
-  point <- roll_dice()
-  cat("You rolled a", point, "\n")
-  
-  # Check the result of the come-out roll
-  if (point %in% c(7, 11)) {
-    cat("Natural! You win!\n")
+come_out_outcome <- function(roll) {
+  # Input: roll, integer from 2 to 12
+  # Output: A string indicating "win", "lose", or "continue"
+  # Description: Handles the outcome of the come-out roll  
+  if (roll %in% c(7, 11)) {
     return("win")
-  } else if (point %in% c(2, 3, 12)) {
-    cat("Craps! You lose.\n")
-    return("lose")
-  } else {
-    cat("Point established at", point, ". Now you need to roll", point, "again before a 7 to win.\n")
-    
-    # Roll until the player either makes the point or rolls a 7
-    while (TRUE) {
-      # Ask the player if they want to roll again
-      continue <- readline(prompt = "Press Enter to roll again, or type 'exit' to quit: ")
-      if (tolower(continue) == "exit") {
-        cat("Game ended. Thank you for playing!\n")
-        return("exit")
-      }
-      
-      # Roll the dice again
-      roll <- roll_dice()
-      cat("You rolled a", roll, "\n")
-      
-      if (roll == point) {
-        cat("You made your point! You win!\n")
-        return("win")
-      } else if (roll == 7) {
-        cat("You rolled a 7. You lose.\n")
-        return("lose")
-      } else {
-        cat("Rolling again...\n")
-      }
+  } else if (roll %in% c(2, 3, 12)) {
+    return("loss")
+  } else { 
+    return("point")
+  }
+}
+
+point_phase <- function(point) {
+  # Input: point, integer representing the point number
+  # Output: A string indicating "win" or "lose"
+  # Description: Simulates rolling to match the point to win or hit a 7 to lose
+  repeat {
+    roll <- roll_dice()
+    if (roll == point) {
+      return("win")
+    } else if (roll == 7) {
+      return("loss")
     }
   }
 }
 
-# Function to play multiple games of Craps interactively
-play_multiple_games <- function() {
-  while (TRUE) {
-    result <- play_craps()
-    
-    if (result == "exit") break
-    
-    # Ask if the player wants to play again
-    play_again <- readline(prompt = "Do you want to play another game? (y/n): ")
-    if (tolower(play_again) != "y") {
-      cat("Thanks for playing!\n")
-      break
+simulate_craps_game <- function(game_id) {
+  # Input: game_id - Integer representing the game identifier
+  # Output: Data frame with columns game_id, roll_id, roll_result, outcome, point
+  # Description: Simulates a single game of Craps and records all relevant details
+  
+  game_log <- data.frame(
+    game_id = integer(),
+    roll_id = integer(),
+    roll_result = integer(),
+    outcome = character(),
+    point = integer(),
+    stringsAsFactors = FALSE
+  )
+  
+  roll_id <- 1
+  first_roll <- roll_dice()
+  outcome <- come_out_outcome(first_roll)
+  point <- ifelse(outcome == "point", first_roll, NA)
+  
+  game_log <- rbind(game_log, data.frame(
+    game_id = game_id,
+    roll_id = roll_id,
+    roll_result = first_roll,
+    outcome = outcome,
+    point = point
+  ))
+  
+  if (outcome == "point") {
+    repeat {
+      roll_id <- roll_id + 1
+      new_roll <- roll_dice()
+      outcome <- ifelse(new_roll == point, "win", ifelse(new_roll == 7, "loss", "continue"))
+      game_log <- rbind(game_log, data.frame(
+        game_id = game_id,
+        roll_id = roll_id,
+        roll_result = new_roll,
+        outcome = outcome,
+        point = point
+      ))
+      if (outcome %in% c("win", "loss")) {
+        break
+      }
     }
   }
+  
+  return(game_log)
 }
 
-# Start the game
-play_multiple_games()
+summarize_craps_game <- function(game_log) {
+  # Input: Data frame from simulate_craps_game
+  # Output: Data frame with summary: game_id, n_rolls, final_outcome, point
+  # Description: Summarizes the results of a single game
+  
+  game_id <- game_log$game_id[1]
+  n_rolls <- nrow(game_log)
+  final_outcome <- tail(game_log$outcome, 1)
+  point <- ifelse(game_log$outcome[1] == "point", game_log$point[1], NA)
+  
+  summary <- data.frame(
+    game_id = game_id,
+    n_rolls = n_rolls,
+    final_outcome = final_outcome,
+    point = point,
+    stringsAsFactors = FALSE
+  )
+  return(summary)
+}
+
+run_craps_simulation <- function(N) {
+  # Input: an integer N determining the number of games to simulate
+  # Output: Data frame summarizing all games: game_id, n_rolls, final_outcome, point
+  # Description: Runs N simulations and summarizes each game
+  
+  summary_results <- data.frame(
+    game_id = integer(),
+    n_rolls = integer(),
+    final_outcome = character(),
+    point = integer(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (game_id in 1:N) {
+    game_log <- simulate_craps_game(game_id)
+    game_summary <- summarize_craps_game(game_log)
+    summary_results <- rbind(summary_results, game_summary)
+  }
+  
+  return(summary_results)
+}

@@ -1,13 +1,91 @@
-function you created
-show the code 
-show the simulation
+---
+title: "Craps Simulation"
+format: html
+author: Nathan Ma
+---
 
-#set seed, for repeattive
-#repeat simulation
-##sum the strd mean - 
+`The avaliable wrok progress are store in craps-code.qmd and pseudocode.qmd`
 
-what is the different for the variability 
+## Question 1: Which probability do you want to estimate?
+  - Answer: I aim to estimate the winning probability in a game of craps.
 
-variability < signal (the winning probality)
-if >, increase the simulation # to reduce the Var.
+
+```{r, echo=FALSE}
+# Load Required Functions
+source("simulation.R")
+set.seed(114514)
+estimate_winning_probability <- function(N_trials) {
+  # Input:
+  # N_trials: Vector of integers for different numbers of simulations
+  #
+  # Output:
+  # Data frame summarizing winning probabilities and variability
+  
+  results_summary <- data.frame(
+    simulations = integer(),
+    win_prob = numeric(),
+    variability = numeric(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (N in N_trials) {
+    set.seed(114514)
+    simulations <- run_craps_simulation(N)
+    
+    # Calculate Winning Probability and Variability
+    win_prob <- mean(simulations$final_outcome == "win")
+    variability <- sd(simulations$final_outcome == "win")
+    
+    results_summary <- rbind(results_summary, data.frame(
+      simulations = N,
+      win_prob = win_prob,
+      variability = variability
+    ))
+  }
+  
+  return(results_summary)
+}
+
+# Different simulation sizes
+N_trials <- c(100, 500, 1000, 5000, 10000)
+simulation_results <- estimate_winning_probability(N_trials)
+```
+
+## Question 2: What is the simulation result (in numbers and visuals)?
+  - Answer:
+
+```{r}
+# Print the Simulation Results
+cat("Simulation Results:\n")
+print(simulation_results)
+library(ggplot2)
+
+# Plot Variability vs Number of Simulations
+ggplot(simulation_results, aes(x = simulations, y = variability)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(
+    title = "Variability vs Number of Simulations",
+    x = "Number of Simulations",
+    y = "Variability"
+  ) +
+  theme_minimal()
+
+# Plot Winning Probability Convergence
+ggplot(simulation_results, aes(x = simulations, y = win_prob)) +
+  geom_line(color = "green") +
+  geom_point(color = "orange") +
+  geom_hline(yintercept = mean(simulation_results$win_prob), linetype = "dashed", color = "black") +
+  labs(
+    title = "Winning Probability vs Number of Simulations",
+    x = "Number of Simulations",
+    y = "Winning Probability"
+  ) +
+  theme_minimal()
+```
+
+## Interpret Results
+1. The winning probability stabilizes as the number of simulations increases.
+2. Variability decreases with increasing simulations, showing more reliable estimates for larger simulation sizes.
+3. Use this result to determine the number of simulations needed for accurate estimates in similar problems.
 
