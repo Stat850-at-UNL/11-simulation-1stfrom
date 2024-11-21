@@ -15,83 +15,6 @@ You WILL get confused and miss steps if you do not follow the instructions seque
 
 # Understanding the game flow
 
-ChatGPT provides the following pseudocode for playing a game of craps. 
-You can see the full script [here](deps/ChatGPT Pseudocode.html) (it goes a bit beyond pseudocode).
-
-Note that this pseudocode seems to be relatively Pythonic. 
-You will have the opportunity to write (somewhat different) pseudocode later, but for now, work with this pseudocode to develop an understanding of the game.
-
-```{}
-function playCraps():
-    while true:
-        // Roll the dice
-        roll = rollDice()
-
-        // Check the outcome of the roll
-        if isComeOutRoll(roll):
-            handleComeOutRoll(roll)
-        else:
-            handlePointRoll(roll)
-
-        // Display current status and ask if the player wants to continue
-        displayCurrentStatus()
-        if not playAgain():
-            break
-
-function rollDice():
-    die1 = random(1, 6)
-    die2 = random(1, 6)
-    total = die1 + die2
-    return total
-
-function isComeOutRoll(roll):
-    return roll in [2, 3, 7, 11, 12]
-
-function handleComeOutRoll(roll):
-    if roll in [7, 11]:
-        playerWins()
-    elif roll in [2, 3, 12]:
-        playerLoses()
-    else:
-        point = roll
-        displayPointMessage(point)
-        handlePointRoll(point)
-
-function handlePointRoll(point):
-    while true:
-        roll = rollDice()
-
-        if roll == point:
-            playerWins()
-            break
-        elif roll == 7:
-            playerLoses()
-            break
-
-function playerWins():
-    displayWinMessage()
-
-function playerLoses():
-    displayLoseMessage()
-
-function displayPointMessage(point):
-    // Display the point for the current round
-
-function displayWinMessage():
-    // Display a message indicating the player has won
-
-function displayLoseMessage():
-    // Display a message indicating the player has lost
-
-function displayCurrentStatus():
-    // Display the current status of the game
-
-function playAgain():
-    // Ask the player if they want to play again
-    // Return True if the player wants to play again, False otherwise
-
-```
-
 ## Flowchart {#sec-flowchart}
 
 Create a flowchart illustrating how the game unfolds, using the function names provided in the ChatGPT code. 
@@ -165,45 +88,39 @@ roll_dice <- function() {
   # Input: None
   # Output: an integer from 1 to 12
   # Description: Generate 2 random integers from 1 to 6 and sum them
-  return(sum(sample(1:6, 2, replace = TRUE)))
+  die1 <- sample(1:6, 1)
+  die2 <- sample(1:6, 1)
+  return(die1 + die2)
 }
 ```
 
-```{r, first roll}
-is_come_out_roll <- function(roll) {
-  # Input: roll, integer from 2 to 12
-  # Output: Boolean (TRUE if roll is 2, 3, 7, 11, or 12)
-  # Description: Check if the roll is a come-out roll
-  return(roll %in% c(2, 3, 7, 11, 12))
-}
-```
 
 ```{r, read come out roll}
-handle_come_out_roll <- function(roll) {
+come_out_outcome <- function(roll) {
   # Input: roll, integer from 2 to 12
   # Output: A string indicating "win", "lose", or "continue"
-  # Description: Handles the outcome of the come-out roll
+  # Description: Handles the outcome of the come-out roll  
   if (roll %in% c(7, 11)) {
     return("win")
   } else if (roll %in% c(2, 3, 12)) {
-    return("lose")
+    return("loss")
   } else {
-    return("continue")
+    return("point")
   }
 }
 ```
 
 ```{r, point roll}
-handle_point_roll <- function(point) {
+point_phase <- function(point) {
   # Input: point, integer representing the point number
   # Output: A string indicating "win" or "lose"
   # Description: Simulates rolling to match the point to win or hit a 7 to lose
-  while (TRUE) {
+  repeat {
     roll <- roll_dice()
     if (roll == point) {
       return("win")
     } else if (roll == 7) {
-      return("lose")
+      return("loss")
     }
   }
 }
@@ -217,13 +134,7 @@ Which helper function(s) will be called inside each required function?
 
 
 
-
-
-
-
-
-
-<!-- Include a picture here using markdown image format. Save the picture in your repository and remember to commit it! -->
+![Flowchart for the crap logic with function](figure/Flow_func.png)
 
 ## Simulating a full game {#sec-game-pseudocode}
 
@@ -235,33 +146,28 @@ simulate_craps_game <- function() {
   # Input: None
   # Output: Data frame with columns id, roll, outcome, point
   # Description: Simulate a single game of Craps, recording each roll and outcome
-  game_data <- data.frame(id = integer(), roll = integer(), outcome = character(), point = integer())
-  roll <- roll_dice()
-  game_data <- rbind(game_data, data.frame(id = 1, roll = roll, outcome = NA, point = roll))
+  game_log <- data.frame(id = integer(), roll = integer(), outcome = character(), stringsAsFactors = FALSE)
+  roll_count <- 1
+  first_roll <- roll_dice()
+  outcome <- come_out_outcome(first_roll)
   
-  # Handle come-out roll
-  outcome <- handle_come_out_roll(roll)
+  game_log <- rbind(game_log, data.frame(id = roll_count, roll = first_roll, outcome = outcome))
   
-  if (outcome != "continue") {
-    game_data$outcome[1] <- outcome
-  } else {
-    point <- roll
-    roll_num <- 1
-    
-    # Roll until point is made or 7 is rolled
-    while (TRUE) {
-      roll_num <- roll_num + 1
-      roll <- roll_dice()
-      outcome <- ifelse(roll == point, "win", ifelse(roll == 7, "lose", "continue"))
-      
-      game_data <- rbind(game_data, data.frame(id = roll_num, roll = roll, outcome = outcome, point = point))
-      
-      if (outcome != "continue") break
+  if (outcome == "point") {
+    point <- first_roll
+    repeat {
+      roll_count <- roll_count + 1
+      new_roll <- roll_dice()
+      outcome <- ifelse(new_roll == point, "win", ifelse(new_roll == 7, "loss", "continue"))
+      game_log <- rbind(game_log, data.frame(id = roll_count, roll = new_roll, outcome = outcome))
+      if (outcome %in% c("win", "loss")) {
+        break
+      }
     }
   }
-  return(game_data)
+  
+  return(game_log)
 }
-
 ```
 
 ## Summarizing a game {#sec-game-summary-pseudocode}
@@ -270,16 +176,16 @@ Add a function that summarizes a game of craps (e.g. go from the data structure 
 
 
 ```{r, summarize}
-summarize_craps_game <- function(game_data) {
+summarize_craps_game <- function(game_log) {
   # Input: Data frame from simulate_craps_game
   # Output: Data frame with summary of n_rolls, outcome, point
   # Description: Summarize a single game's results
+  n_rolls <- nrow(game_log)
+  final_outcome <- tail(game_log$outcome, 1)
+  point <- ifelse(game_log$outcome[1] == "point", game_log$roll[1], NA)
   
-  n_rolls <- nrow(game_data)
-  outcome <- tail(game_data$outcome[game_data$outcome != "continue"], 1)
-  point <- ifelse(n_rolls > 1, game_data$point[1], NA)
-  
-  return(data.frame(n_rolls = n_rolls, outcome = outcome, point = point))
+  summary <- data.frame(n_rolls = n_rolls, outcome = final_outcome, point = point, stringsAsFactors = FALSE)
+  return(summary)
 }
 ```
 
@@ -290,19 +196,23 @@ run_craps_simulation <- function(N) {
   # Input: an integer N which decide the number of games to simulate
   # Output: Data frame summarizing each game
   # Description: Runs N simulations of Craps games and summarizes results
-  results <- data.frame(n_rolls = integer(), outcome = character(), point = integer())
+  results <- data.frame(n_rolls = integer(), outcome = character(), point = integer(), stringsAsFactors = FALSE)
   
   for (i in 1:N) {
-    game_data <- simulate_craps_game()
-    summary <- summarize_craps_game(game_data)
-    results <- rbind(results, summary)
+    game_log <- simulate_craps_game()
+    game_summary <- summarize_craps_game(game_log)
+    results <- rbind(results, game_summary)
   }
   
   return(results)
 }
 ```
 
-
+```{r, run simulation example}
+set.seed(114514)
+simulation_results <- run_craps_simulation(10000)
+head(simulation_results)
+```
 ## Planning for implementation
 
 What parts are still missing for you to write code implementing craps based on your pseudocode? 
