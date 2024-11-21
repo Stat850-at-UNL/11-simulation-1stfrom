@@ -7,23 +7,20 @@ author: Nathan Ma
 `The avaliable wrok progress are store in craps-code.qmd and pseudocode.qmd`
 
 ## Question 1: Which probability do you want to estimate?
-  - Answer: I aim to estimate the winning probability in a game of craps.
+  - Answer: I aim to estimate the winning probability with point greater than 9 in a game of craps.
 
 
 ```{r, echo=FALSE}
 # Load Required Functions
 source("simulation.R")
 set.seed(114514)
-estimate_winning_probability <- function(N_trials) {
-  # Input:
-  # N_trials: Vector of integers for different numbers of simulations
-  #
-  # Output:
-  # Data frame summarizing winning probabilities and variability
+estimate_winning_probability_greater_than_9 <- function(N_trials) {
+  # Input: N_trials: Vector of integers for different numbers of simulations
+  # Output: Data frame summarizing winning probabilities for games with point > 9 and variability
   
   results_summary <- data.frame(
     simulations = integer(),
-    win_prob = numeric(),
+    win_prob_gt_9 = numeric(),
     variability = numeric(),
     stringsAsFactors = FALSE
   )
@@ -32,13 +29,22 @@ estimate_winning_probability <- function(N_trials) {
     set.seed(114514)
     simulations <- run_craps_simulation(N)
     
-    # Calculate Winning Probability and Variability
-    win_prob <- mean(simulations$final_outcome == "win")
-    variability <- sd(simulations$final_outcome == "win")
+    # Filter games where the point > 9
+    games_gt_9 <- simulations[!is.na(simulations$point) & simulations$point > 9, ]
+    
+    if (nrow(games_gt_9) > 0) {
+      # Calculate Winning Probability and Variability for Point > 9
+      win_prob_gt_9 <- mean(games_gt_9$final_outcome == "win")
+      variability <- sd(games_gt_9$final_outcome == "win")
+    } else {
+      # Handle case where no games with point > 9 occur
+      win_prob_gt_9 <- NA
+      variability <- NA
+    }
     
     results_summary <- rbind(results_summary, data.frame(
       simulations = N,
-      win_prob = win_prob,
+      win_prob_gt_9 = win_prob_gt_9,
       variability = variability
     ))
   }
@@ -46,46 +52,48 @@ estimate_winning_probability <- function(N_trials) {
   return(results_summary)
 }
 
+
 # Different simulation sizes
 N_trials <- c(100, 500, 1000, 5000, 10000)
-simulation_results <- estimate_winning_probability(N_trials)
+simulation_results <- estimate_winning_probability_greater_than_9(N_trials)
 ```
 
 ## Question 2: What is the simulation result (in numbers and visuals)?
-  - Answer:
+  - Answer: 
 
 ```{r}
 # Print the Simulation Results
-cat("Simulation Results:\n")
+cat("Simulation Results for Point > 9:\n")
 print(simulation_results)
+
+# Visualize Winning Probability for Point > 9
 library(ggplot2)
 
-# Plot Variability vs Number of Simulations
+# Plot Variability vs Number of Simulations for Point > 9
 ggplot(simulation_results, aes(x = simulations, y = variability)) +
   geom_line(color = "blue") +
   geom_point(color = "red") +
   labs(
-    title = "Variability vs Number of Simulations",
+    title = "Variability vs Number of Simulations (Point > 9)",
     x = "Number of Simulations",
     y = "Variability"
   ) +
   theme_minimal()
 
-# Plot Winning Probability Convergence
-ggplot(simulation_results, aes(x = simulations, y = win_prob)) +
+# Plot Winning Probability Convergence for Point > 9
+ggplot(simulation_results, aes(x = simulations, y = win_prob_gt_9)) +
   geom_line(color = "green") +
   geom_point(color = "orange") +
-  geom_hline(yintercept = mean(simulation_results$win_prob), linetype = "dashed", color = "black") +
+  geom_hline(yintercept = mean(simulation_results$win_prob_gt_9, na.rm = TRUE), linetype = "dashed", color = "black") +
   labs(
-    title = "Winning Probability vs Number of Simulations",
+    title = "Winning Probability vs Number of Simulations (Point > 9)",
     x = "Number of Simulations",
-    y = "Winning Probability"
+    y = "Winning Probability (Point > 9)"
   ) +
   theme_minimal()
 ```
 
 ## Interpret Results
-1. The winning probability stabilizes as the number of simulations increases.
-2. Variability decreases with increasing simulations, showing more reliable estimates for larger simulation sizes.
-3. Use this result to determine the number of simulations needed for accurate estimates in similar problems.
+1. The winning probability for games with point > 9 stabilizes as the number of simulations increases.
+2. Variability decreases with increasing simulations, better estimates for larger simulation sizes.
 
