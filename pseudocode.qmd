@@ -221,11 +221,9 @@ Make a plan for next week's work. Where will you start?
 ```{r}
 library(ggplot2)
 library(dplyr)
-N <- 10
-results <- run_craps_simulation(N)
 
 # no NA
-wins_with_point <- results %>%
+wins_with_point <- simulation_results %>%
   filter(outcome == "win" & !is.na(point))
 
 # Plot the pmf of wins with point
